@@ -3,221 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Balance and Transactions</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Movie Finder</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="loginContainer" class="container">
-        <h1>Login</h1>
-        <input type="text" id="username" placeholder="Username" value="user2" disabled>
-        <input type="password" id="password" placeholder="Password">
-        <button id="loginBtn">Login</button>
-        <p id="loginMessage"></p>
-    </div>
-    
-    <div id="appContainer" class="container" style="display:none;">
-        <p id="userBalance">Balance: $0</p>
-        <button id="logoutBtn">Logout</button>
-        <input type="text" id="searchBar" placeholder="Search for a number...">
-        <table id="resultsTable">
-            <thead>
-                <tr>
-                    <th>Photo</th>
-                    <th>Number</th>
-                    <th>Name</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody id="results"></tbody>
-        </table>
-        <div id="history" class="container">
-            <h2>Transaction History</h2>
-            <div id="historyContainer"></div>
-        </div>
-    </div>
-    
+    <header>
+        <h1>Movie Finder</h1>
+        <p>Search for your favorite movies and get more details</p>
+    </header>
+
+    <section id="search-section">
+        <input type="text" id="searchInput" placeholder="Search for a movie...">
+        <button id="searchButton">Search</button>
+    </section>
+
+    <section id="movieContainer"></section>
+
+    <footer>
+        <p>&copy; 2024 Movie Finder. All rights reserved.</p>
+    </footer>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-    const loginContainer = document.getElementById('loginContainer');
-    const appContainer = document.getElementById('appContainer');
-    const userBalanceDisplay = document.getElementById('userBalance');
-    const loginBtn = document.getElementById('loginBtn');
-    const passwordInput = document.getElementById('password');
-    const loginMessage = document.getElementById('loginMessage');
-    const searchBar = document.getElementById('searchBar');
-    const results = document.getElementById('results');
-    const historyContainer = document.getElementById('historyContainer');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    // Example single user
-    const validUsername = 'user2';
-    const validPassword = 'password2';
-
-    // Initialize balance and history from localStorage
-    let userBalance = parseFloat(localStorage.getItem('userBalance')) || 0; // Default balance
-    const loggedInUser = localStorage.getItem('loggedInUser');
-    
-   
-    // Handle login
-    loginBtn.addEventListener('click', () => {
-        const password = passwordInput.value.trim();
-        
-        if (validPassword === password) {
-            localStorage.setItem('loggedInUser', validUsername);
-            localStorage.setItem('userBalance', userBalance);
-            loginContainer.style.display = 'none';
-            appContainer.style.display = 'block';
-            userBalanceDisplay.textContent = `Balance: $${userBalance}`;
-            renderResults();
-            renderHistory();
-        } else {
-            loginMessage.textContent = 'Invalid password.';
-        }
-    });
-
-    // Handle logout
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('loggedInUser');
-        location.reload(); // Redirect to login page
-    });
-
-    // Example data
-    const numbers = [
-        { number: '001', name: 'Name 1', photo: 'https://via.placeholder.com/50?text=001', amount: 97050 },
-        { number: '002', name: 'Name 2', photo: 'https://via.placeholder.com/50?text=002', amount: 100 },
-        { number: '003', name: 'Name 3', photo: 'https://via.placeholder.com/50?text=003', amount: 150 },
-        // Add more entries as needed
-    ];
-
-    // Render results
-    function renderResults() {
-        results.innerHTML = '';
-
-        numbers.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td><img src="${item.photo}" alt="${item.name}"></td><td>${item.number}</td><td>${item.name}</td><td>${item.amount}</td>`;
-            tr.addEventListener('click', () => handleChoice(item));
-            results.appendChild(tr);
-        });
-    }
-
-    function handleChoice(item) {
-        if (userBalance >= item.amount) {
-            userBalance -= item.amount;
-            localStorage.setItem('userBalance', userBalance);
-            userBalanceDisplay.textContent = `Balance: $${userBalance}`;
-            alert(`You selected number ${item.number} and $${item.amount} was deducted from your balance.`);
-            saveHistory(item);
-        } else {
-            alert('Insufficient balance!');
-        }
-    }
-
-    function saveHistory(item) {
-        const historyItem = {
-            number: item.number,
-            name: item.name,
-            amount: item.amount,
-            photo: item.photo,
-            timestamp: new Date().toLocaleString()
-        };
-        let historyData = JSON.parse(localStorage.getItem('history')) || [];
-        historyData.push(historyItem);
-        localStorage.setItem('history', JSON.stringify(historyData));
-        renderHistory();
-    }
-
-    function renderHistory() {
-        historyContainer.innerHTML = '';
-        const historyData = JSON.parse(localStorage.getItem('history')) || [];
-        historyData.forEach(item => {
-            const div = document.createElement('div');
-            div.classList.add('history-item');
-            div.innerHTML = `<img src="${item.photo}" alt="${item.name}"><div><p>Number: ${item.number}</p><p>Name: ${item.name}</p><p>Amount: $${item.amount}</p><p>Time: ${item.timestamp}</p></div>`;
-            historyContainer.appendChild(div);
-        });
-    }
-
-    // Handle page reloads
-    if (loggedInUser) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
-        userBalanceDisplay.textContent = `Balance: $${userBalance}`;
-        renderResults();
-        renderHistory();
-    }
+        document.getElementById('searchButton').addEventListener('click', () => {
+    const query = document.getElementById('searchInput').value;
+    searchMovies(query);
 });
+
+function searchMovies(query) {
+    const apiKey = '49b81f0c'; // Replace with your movie API key
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            displayMovies(data.results);
+        })
+        .catch(error => console.error('Error fetching movies:', error));
+}
+
+function displayMovies(movies) {
+    const movieContainer = document.getElementById('movieContainer');
+    movieContainer.innerHTML = '';
+
+    if (movies) {
+        movies.forEach(movie => {
+            const movieElement = document.createElement('div');
+            movieElement.classList.add('movie');
+
+            movieElement.innerHTML = `
+                <h3>${movie.title}</h3>
+                <p>Release Date: ${movie.release_date}</p>
+                <a href="#" data-id="${movie.id}" class="movie-link">More Details</a>
+            `;
+
+            movieContainer.appendChild(movieElement);
+        });
+
+        document.querySelectorAll('.movie-link').forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const movieId = event.target.getAttribute('data-id');
+                showMovieDetails(movieId);
+            });
+        });
+    } else {
+        movieContainer.innerHTML = '<p>No movies found.</p>';
+    }
+}
+
+function showMovieDetails(movieId) {
+    const apiKey = '49b81f0c'; // Replace with your movie API key
+    const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(movie => {
+            alert(`Title: ${movie.title}\nOverview: ${movie.overview}`);
+            // Here you can redirect to a movie details page or display a modal with more information
+        })
+        .catch(error => console.error('Error fetching movie details:', error));
+}
 
     </script>
 </body>
 <style>
     body {
     font-family: Arial, sans-serif;
-}
-
-.container {
-    max-width: 800px;
-    margin: 20px auto;
-    padding: 20px;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
     text-align: center;
 }
 
-#loginContainer, #appContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+header {
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-#loginContainer input, #loginContainer button, #searchBar {
-    width: 100%;
-    max-width: 300px;
+header h1 {
+    margin: 0;
+    font-size: 2.5em;
+}
+
+header p {
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+
+#search-section {
+    margin: 20px 0;
+}
+
+input[type="text"] {
+    width: 60%;
     padding: 10px;
-    margin: 10px 0;
-}
-
-#searchBar {
-    margin-bottom: 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-}
-
-th, td {
+    font-size: 16px;
+    border-radius: 5px;
     border: 1px solid #ddd;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+button:hover {
+    background-color: #555;
+}
+
+#movieContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.movie {
+    background-color: white;
+    border: 1px solid #ddd;
+    margin: 10px;
     padding: 10px;
+    width: 200px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     text-align: left;
 }
 
-th {
-    background-color: #f2f2f2;
+.movie h3 {
+    font-size: 18px;
+    margin: 10px 0;
 }
 
-tbody tr:hover {
-    background-color: #f1f1f1;
-    cursor: pointer;
+.movie p {
+    font-size: 14px;
+    color: #555;
 }
 
-#results img {
-    width: 50px;
-    height: 50px;
-}
-
-.history-item {
-    margin: 5px 0;
+footer {
+    background-color: #333;
+    color: white;
     padding: 10px;
-    background: #e0e0e0;
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-}
-
-.history-item img {
-    width: 50px;
-    height: 50px;
-    margin-right: 10px;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    left: 0;
 }
 
 </style>
